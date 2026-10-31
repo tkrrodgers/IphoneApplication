@@ -1,6 +1,6 @@
 # Logsperity Privacy Policy
 
-*Draft for Prosperity Simplified to review. Last updated: October 31, 2026.*
+*Last updated: October 31, 2026.*
 
 Logsperity is made by Prosperity Simplified. This policy covers the Logsperity iPhone app.
 
