@@ -83,10 +83,10 @@ Annual Report PDF (Complete/Streamlined) · weekly check-in · Siri / App Intent
 | M1 | Engine: taxonomy, periods, ledger, index, plan tracking, scorecards, logging rules + tests | — | **Done** (32 tests) |
 | M2 | Engine: report builders, coaching insights, sample year + tests | — | **Done** (48 tests) |
 | M3 | Engine: HERB intents, replies and the follow-up dialog, ported with the simulator's dialog tests | — | **Done** (105 engine tests in all) |
-| M4 | App: app model and storage, the five tabs, the six log forms | Xcode to run | **Written**, type-checked on macOS; not yet run on iOS |
-| M5 | App: Reports and Coach screens, PDF share | Xcode to run | **Written**, type-checked; not yet run |
-| M6 | App: Ask HERB with speech, Review queue, daily reminder, sample data | Xcode to run | **Written**, type-checked; not yet run |
-| M7 | Run in the iOS Simulator and on a real iPhone; fix what the team finds | Xcode, an iPhone | |
+| M4 | App: app model and storage, the five tabs, the six log forms | Xcode to run | **Done**: builds with Xcode 27.2, runs in the iOS 27.2 simulator |
+| M5 | App: Reports and Coach screens, PDF share | Xcode to run | **Done**: checked in the simulator |
+| M6 | App: Ask HERB with speech, Review queue, daily reminder, sample data | Xcode to run | **Done**: design §17.2 conversation verified in the simulator; microphone needs a real iPhone |
+| M7 | Run in the iOS Simulator and on a real iPhone; fix what the team finds | Xcode, an iPhone | Simulator done; real iPhone next |
 | M8 | TestFlight: archive, upload, invite testers | **Apple Developer account** | |
 
 ## 6. Apple accounts and TestFlight — who does what

@@ -52,18 +52,15 @@ struct ReportView: View {
         }
         .navigationTitle(Reports.titles[key] ?? "Report").inlineTitle()
         .toolbar {
-            if let report {
-                if let pdf {
-                    ShareLink(item: pdf) { Image(systemName: "square.and.arrow.up") }
-                } else {
-                    Button { pdf = PDFExport.render(PrintableReport(report: report, owner: model.settings.name), fileName: report.title) } label: {
-                        Image(systemName: "doc.richtext")
-                    }
-                    .accessibilityLabel("Make a PDF")
-                }
+            if let pdf {
+                ShareLink(item: pdf) { Image(systemName: "square.and.arrow.up") }
+                    .accessibilityLabel("Share or print as PDF")
             }
         }
-        .onChange(of: periodKey) { _, _ in pdf = nil }
+        .task(id: periodKey) {
+            pdf = nil
+            if let report { pdf = PDFExport.render(PrintableReport(report: report, owner: model.settings.name), fileName: report.title) }
+        }
     }
 }
 

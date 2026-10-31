@@ -32,7 +32,8 @@ struct TodayView: View {
                         NavigationLink { ReviewQueueView() } label: {
                             HStack {
                                 Image(systemName: "tray.full.fill").foregroundStyle(Color.brandBlue)
-                                Text("HERB logged \(review.count) item\(review.count == 1 ? "" : "s") for you to review").foregroundStyle(.primary)
+                                Text("HERB logged \(review.count) item\(review.count == 1 ? "" : "s") for you to review")
+                                    .foregroundStyle(.primary).multilineTextAlignment(.leading)
                                 Spacer()
                                 Image(systemName: "chevron.right").foregroundStyle(.tertiary)
                             }
