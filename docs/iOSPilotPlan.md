@@ -22,9 +22,9 @@
 |---|---|---|
 | HERB runs on Apple's on-device Foundation Models (§6.1, §17.2) | HERB's **rule-based engine, ported from the simulator**, runs on every iPhone. Foundation Models plugs in behind the same interface later, on phones that support Apple Intelligence | Foundation Models needs an iPhone 15 Pro or newer with Apple Intelligence turned on. Not every tester will have that. The rule-based engine is predictable and already covered by tests, and the design's rule "code decides what to ask" stays the same either way |
 | Sign in with Apple; Monthly/Annual plans through In-App Purchase (§8.1, D1) | **No sign-in and no purchase in the pilot** | All data stays on the phone and in the user's own iCloud, so there's no Logsperity server to sign in to. Pilot testers aren't charged. In-App Purchase is added before the App Store release (it needs the paid-apps agreement and tax/banking setup in App Store Connect) |
-| SwiftData synced to iCloud (§18) | **SwiftData on the phone first; iCloud sync turned on once the developer account exists** | iCloud sync needs an iCloud container registered to the developer account. The data model is written to iCloud's rules from day one (every field optional or defaulted, no unique constraints), so turning sync on later is a setting, not a rewrite |
+| SwiftData synced to iCloud (§18) | **The log book saved as one protected JSON file on the phone; iCloud sync after the pilot** | Every record is already a plain `Codable` value in the engine, so the store is about 50 lines and doubles as "Export my data". It sits behind `FileStore`, so SwiftData or CloudKit replaces it when sync is added. iCloud sync needs an iCloud container on the developer account, and each pilot tester uses one phone. |
 | Money as `Decimal` (§18) | Money as `Double` dollars, rounded to cents on entry | Matches the simulator's engine, so the ported tests carry over number for number. Sums of a year's entries stay exact to the cent |
-| Rule R5 "one closing per prospect" enforced by the database | Enforced in code (`LogRules.checkOneClosing`) | iCloud sync doesn't allow unique constraints |
+| Rule R5 "one closing per prospect" enforced by the database | Enforced in code (`LogRules.checkOneClosing`) | Works the same with any store, including iCloud sync later (which doesn't allow unique constraints) |
 | Phase 2 automation: receipt scanning, GPS trips, calendar → activities, bank import (§6.3, §20) | **Not in the first pilot build** | These need permissions, background work and careful testing. The pilot proves the logs, numbers, reports and HERB first. They're the next milestone |
 
 ## 3. Architecture
@@ -33,7 +33,7 @@
 ┌──────────────────────────── Logsperity app (SwiftUI, iOS 26+) ────────────────────────────┐
 │  Today · Log · Reports · Coach · More          Ask HERB (text + on-device speech)         │
 │        │                                                     │                            │
-│  SwiftData store (on the phone; iCloud later)  ── snapshot ──► LogBook (plain values)     │
+│  FileStore (JSON on the phone; iCloud later)   ── loads ─────► LogBook (plain values)     │
 └────────────────────────────────────────────────────────────────┼──────────────────────────┘
                                                                  ▼
 ┌──────────────── LogsperityCore (Swift package, no UI, tested with `swift test`) ──────────┐
@@ -51,8 +51,9 @@
 ```
 ios/
   LogsperityCore/          Swift package: the engine and its tests (./test.sh)
-  Logsperity/              the app: SwiftUI screens, SwiftData models, speech
-  project.yml              XcodeGen spec → Logsperity.xcodeproj
+  Logsperity/              the app: SwiftUI screens, app model, file store, speech, reminders
+  AppCheck/                type-checks the app's code on a Mac without Xcode (swift build)
+  project.yml              XcodeGen spec → Logsperity.xcodeproj (run `xcodegen` in ios/)
 docs/iOSPilotPlan.md       this file
 ```
 
@@ -80,11 +81,11 @@ Annual Report PDF (Complete/Streamlined) · weekly check-in · Siri / App Intent
 | # | Milestone | Needs | Status |
 |---|---|---|---|
 | M1 | Engine: taxonomy, periods, ledger, index, plan tracking, scorecards, logging rules + tests | — | **Done** (32 tests) |
-| M2 | Engine: report builders and coaching insights + tests | — | Next |
-| M3 | Engine: HERB intents, replies and the follow-up dialog, ported with the simulator's dialog tests | — | |
-| M4 | App: SwiftData models, the five tabs, the six log forms | **Xcode installed** | |
-| M5 | App: Reports and Coach screens, PDF share | Xcode | |
-| M6 | App: Ask HERB with speech, Review queue, daily reminder, sample data | Xcode | |
+| M2 | Engine: report builders, coaching insights, sample year + tests | — | **Done** (48 tests) |
+| M3 | Engine: HERB intents, replies and the follow-up dialog, ported with the simulator's dialog tests | — | In progress |
+| M4 | App: app model and storage, the five tabs, the six log forms | Xcode to run | **Written**, type-checked on macOS; not yet run on iOS |
+| M5 | App: Reports and Coach screens, PDF share | Xcode to run | **Written**, type-checked; not yet run |
+| M6 | App: Ask HERB with speech, Review queue, daily reminder, sample data | Xcode to run | Review queue, reminder, sample data and speech written; Ask HERB screen waits on M3 |
 | M7 | Run in the iOS Simulator and on a real iPhone; fix what the team finds | Xcode, an iPhone | |
 | M8 | TestFlight: archive, upload, invite testers | **Apple Developer account** | |
 
