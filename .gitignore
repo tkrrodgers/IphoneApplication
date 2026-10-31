@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+
+# The simulator's database is rebuilt from seed.py on first run
+herb-sim/data/
+
+# Raw text dumps of the owner's source documents (kept out on purpose)
+extract/
+tools_reports/
+
+# Local tooling
+.claude/
+
+# macOS / Xcode
+.DS_Store
+xcuserdata/
+DerivedData/

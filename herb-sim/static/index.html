@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logsperity Simulator</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<!-- iPhone 16 (390 × 844 pt) -->
+<div class="phone" id="phone">
+  <div class="island" id="island"><span class="live-dot"></span></div>
+  <div class="status"><span id="clock">9:41</span><span class="sig"><i style="height:5px"></i><i style="height:8px"></i><i style="height:11px"></i><span class="batt"></span></span></div>
+  <div class="screen" id="screen"><div class="loading">Loading…</div></div>
+  <nav class="tabbar" id="tabbar"></nav>
+  <div class="home-ind"></div>
+
+  <!-- HERB conversation sheet -->
+  <section class="herb" id="herb" aria-label="HERB">
+    <div class="status"><span id="clock2">9:41</span><span class="sig"><i style="height:5px"></i><i style="height:8px"></i><i style="height:11px"></i><span class="batt"></span></span></div>
+    <div class="herb-top"><button data-act="herb-close">Done</button><span class="lbl">HERB · ON-DEVICE (SIMULATED)</span><button data-act="herb-clear">Clear</button></div>
+    <div class="convo" id="convo"></div>
+    <div class="herb-bottom">
+      <div class="wave" id="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <button class="bigmic" id="bigmic" data-act="mic" aria-label="Talk to HERB"></button>
+      <div class="herb-hint" id="herbHint">Tap the mic or say “Hi Herb…”</div>
+      <form class="herb-type" id="herbForm"><input id="herbInput" placeholder="Type to HERB…" autocomplete="off"><button>Send</button></form>
+    </div>
+  </section>
+
+  <div class="welcome" id="welcome" hidden></div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<!-- Desktop-only simulator controls (not part of the app) -->
+<aside class="sim-panel" id="simPanel">
+  <h3>Simulator</h3>
+  <p>iPhone 16 · 390 × 844 pt · data in SQLite on this PC. Synthetic data only.</p>
+
+  <h4>Voice</h4>
+  <div class="sim-row"><span class="pill off" id="micState"><span class="led"></span><span>Mic off</span></span></div>
+  <div class="sim-row mt8">
+    <button class="sim-btn" id="wakeBtn">Listen for “Hi Herb”</button>
+    <button class="sim-btn ghost" id="pttBtn">Push to talk</button>
+  </div>
+  <div class="heard" id="heard">Heard: —</div>
+  <p class="note mt8" id="voiceNote"></p>
+  <h4>HERB's voice</h4>
+  <select id="voiceSel"></select>
+  <label class="small muted">Speed <input type="range" id="rate" min="0.8" max="1.4" step="0.05" value="1.05"></label>
+  <label class="small"><input type="checkbox" id="speakOn" checked> HERB speaks replies</label>
+
+  <h4>Try saying</h4>
+  <div id="tryList"></div>
+
+  <h4>Data</h4>
+  <div class="sim-row">
+    <button class="sim-btn ghost" id="resetBtn">Reset synthetic data</button>
+    <button class="sim-btn ghost" id="welcomeBtn">Show welcome</button>
+  </div>
+  <p class="note mt8">“Hi Herb” only works while this page is open — on the real iPhone, apps can't run their own wake word; Siri (“Hey Siri, ask Logsperity…”) and the Action Button do that job.</p>
+</aside>
+
+<script src="widgets.js"></script>
+<script src="forms.js"></script>
+<script src="voice.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
