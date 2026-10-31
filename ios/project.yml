@@ -16,7 +16,7 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
     # Set to your Apple Developer Team ID once enrollment is approved (Xcode → Settings → Accounts).
-    DEVELOPMENT_TEAM: ""
+    DEVELOPMENT_TEAM: C893FXP2G4
 targets:
   Logsperity:
     type: application
