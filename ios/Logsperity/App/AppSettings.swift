@@ -25,9 +25,40 @@ struct AppSettings: Codable, Equatable {
     var dismissedInsights: [String] = []
     /// Optional fields the user keeps skipping (§17.2 "HERB learns what the user doesn't want to be asked").
     var herbSkipCounts: [String: Int] = [:]
+    /// Fields HERB stopped offering after three skips in a row.
+    var herbNeverAsk: [String] = []
     var usingSampleData = false
 
     var firstName: String { name.split(separator: " ").first.map(String.init) ?? "" }
 
     var reminderTime: DateComponents { DateComponents(hour: reminderMinutes / 60, minute: reminderMinutes % 60) }
+
+    init() {}
+
+    /// Missing keys keep their defaults, so settings saved by an older build still load after an update.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        func v<T: Decodable>(_ k: CodingKeys, _ d: T) -> T { (try? c.decodeIfPresent(T.self, forKey: k)) ?? d }
+        let d = AppSettings()
+        onboarded = v(.onboarded, d.onboarded)
+        name = v(.name, d.name)
+        title = v(.title, d.title)
+        email = v(.email, d.email)
+        company = v(.company, d.company)
+        phone = v(.phone, d.phone)
+        profession = v(.profession, d.profession)
+        address = v(.address, d.address)
+        zip = v(.zip, d.zip)
+        city = v(.city, d.city)
+        state = v(.state, d.state)
+        reminderMinutes = v(.reminderMinutes, d.reminderMinutes)
+        remindersOn = v(.remindersOn, d.remindersOn)
+        questionStyle = v(.questionStyle, d.questionStyle)
+        autopilotStyle = v(.autopilotStyle, d.autopilotStyle)
+        herbSpeaks = v(.herbSpeaks, d.herbSpeaks)
+        dismissedInsights = v(.dismissedInsights, d.dismissedInsights)
+        herbSkipCounts = v(.herbSkipCounts, d.herbSkipCounts)
+        herbNeverAsk = v(.herbNeverAsk, d.herbNeverAsk)
+        usingSampleData = v(.usingSampleData, d.usingSampleData)
+    }
 }

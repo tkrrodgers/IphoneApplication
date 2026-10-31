@@ -191,6 +191,44 @@ final class AppModel {
         updateSettings { if !$0.dismissedInsights.contains(key) { $0.dismissedInsights.append(key) } }
     }
 
+    // MARK: HERB
+
+    /// A trip HERB is timing ("start a business trip" … "end the trip").
+    private(set) var activeTripStart: (destination: String?, started: Date)?
+
+    func herb() -> Herb {
+        let s = settings
+        let herbSettings = HerbSettings(questionStyle: HerbQuestionStyle(rawValue: s.questionStyle) ?? .balanced,
+                                        ownerFirstName: s.firstName.isEmpty ? nil : s.firstName,
+                                        homeState: s.state.isEmpty ? nil : s.state,
+                                        skipCounts: s.herbSkipCounts, neverAsk: s.herbNeverAsk)
+        let trip = activeTripStart.map {
+            HerbActiveTrip(destination: $0.destination, gpsMiles: nil, minutes: Int(Date().timeIntervalSince($0.started) / 60))
+        }
+        return Herb(book: book, now: today, settings: herbSettings, hour: Calendar.current.component(.hour, from: Date()),
+                    activeTrip: trip)
+    }
+
+    /// Applies what HERB saved and learned this turn.
+    func apply(_ reply: HerbReply) {
+        if !reply.changes.isEmpty { book = book.applying(reply.changes) }
+        if let hs = reply.settings {
+            settings.herbSkipCounts = hs.skipCounts
+            settings.herbNeverAsk = hs.neverAsk
+        }
+        switch reply.trip {
+        case .start(let destination)?: activeTripStart = (destination, Date())
+        case .end?: activeTripStart = nil
+        case nil: break
+        }
+        if !reply.changes.isEmpty || reply.settings != nil { persist() }
+    }
+
+    func apply(_ changes: [LogChange]) {
+        book = book.applying(changes)
+        persist()
+    }
+
     // MARK: Sample data and reset
 
     func loadSampleYear() {

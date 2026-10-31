@@ -95,8 +95,8 @@ struct HerbSettingsView: View {
             } footer: { Text("HERB always asks where a new prospect came from. \"I don't know\" is fine — it waits in the Review queue.") }
             Section {
                 Toggle("HERB speaks replies", isOn: Binding(get: { model.settings.herbSpeaks }, set: { v in model.updateSettings { $0.herbSpeaks = v } }))
-                if !model.settings.herbSkipCounts.filter({ $0.value >= 3 }).isEmpty {
-                    Button("Ask me about skipped fields again") { model.updateSettings { $0.herbSkipCounts = [:] } }
+                if !model.settings.herbNeverAsk.isEmpty {
+                    Button("Ask me about skipped fields again") { model.updateSettings { $0.herbSkipCounts = [:]; $0.herbNeverAsk = [] } }
                 }
             }
             Section("Daily reminder") {

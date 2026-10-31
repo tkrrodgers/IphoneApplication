@@ -8,6 +8,7 @@ import SwiftUI
 struct ProspectForm: View {
     @Environment(AppModel.self) private var model
     var editingID: RecordID?
+    var prefill = Prefill()
     @State private var p = ProspectRecord(date: Day.today())
     @State private var source = ""
     @State private var referrerIsPastClient = false
@@ -54,7 +55,10 @@ struct ProspectForm: View {
     private func load() {
         guard !loaded else { return }
         loaded = true
-        if let id = editingID, let r = model.book.prospects.first(where: { $0.id == id }) {
+        if let r = prefill.prospect {
+            p = r
+            source = prefill.sourceName(r.attribution.sourceID, in: model.book)
+        } else if let id = editingID, let r = model.book.prospects.first(where: { $0.id == id }) {
             p = r
             source = model.sourceName(r.attribution.sourceID)
         } else {
@@ -94,6 +98,7 @@ struct ProspectForm: View {
 struct ClosingForm: View {
     @Environment(AppModel.self) private var model
     var editingID: RecordID?
+    var prefill = Prefill()
     @State private var c = ClosingRecord(date: Day.today())
     @State private var newClient = false
     @State private var first = ""
@@ -177,7 +182,16 @@ struct ClosingForm: View {
     private func load() {
         guard !loaded else { return }
         loaded = true
-        if let id = editingID, let r = model.book.closings.first(where: { $0.id == id }) { c = r } else { c = ClosingRecord(date: model.today) }
+        if let r = prefill.closing {
+            c = r
+            if let p = prefill.prospect, !model.book.prospects.contains(where: { $0.id == p.id }) {
+                newClient = true
+                first = p.firstNames
+                last = p.lastName
+                source = prefill.sourceName(p.attribution.sourceID, in: model.book)
+                c.prospectID = nil
+            }
+        } else if let id = editingID, let r = model.book.closings.first(where: { $0.id == id }) { c = r } else { c = ClosingRecord(date: model.today) }
         if c.postClosingFollowUp == nil { c.postClosingFollowUp = c.date.adding(days: 180) }
     }
 
@@ -210,6 +224,7 @@ struct ClosingForm: View {
 struct IncomeForm: View {
     @Environment(AppModel.self) private var model
     var editingID: RecordID?
+    var prefill = Prefill()
     @State private var i = IncomeRecord(date: Day.today())
     @State private var loaded = false
 
@@ -272,7 +287,7 @@ struct IncomeForm: View {
         .onAppear {
             guard !loaded else { return }
             loaded = true
-            if let id = editingID, let r = model.book.income.first(where: { $0.id == id }) { i = r } else {
+            if let r = prefill.income { i = r } else if let id = editingID, let r = model.book.income.first(where: { $0.id == id }) { i = r } else {
                 i = IncomeRecord(date: model.today)
                 i.type = .commission
             }
@@ -292,6 +307,7 @@ struct IncomeForm: View {
 struct ExpenseForm: View {
     @Environment(AppModel.self) private var model
     var editingID: RecordID?
+    var prefill = Prefill()
     @State private var e = ExpenseRecord(date: Day.today())
     @State private var source = ""
     @State private var loaded = false
@@ -343,7 +359,10 @@ struct ExpenseForm: View {
         .onAppear {
             guard !loaded else { return }
             loaded = true
-            if let id = editingID, let r = model.book.expenses.first(where: { $0.id == id }) {
+            if let r = prefill.expense {
+                e = r
+                source = prefill.sourceName(r.sourceID, in: model.book)
+            } else if let id = editingID, let r = model.book.expenses.first(where: { $0.id == id }) {
                 e = r
                 source = model.sourceName(r.sourceID)
             } else { e = ExpenseRecord(date: model.today) }
@@ -370,6 +389,7 @@ struct ExpenseForm: View {
 struct TripForm: View {
     @Environment(AppModel.self) private var model
     var editingID: RecordID?
+    var prefill = Prefill()
     @State private var t = TripRecord(date: Day.today())
     @State private var useMiles = false
     @State private var loaded = false
@@ -414,7 +434,7 @@ struct TripForm: View {
         .onAppear {
             guard !loaded else { return }
             loaded = true
-            if let id = editingID, let r = model.book.trips.first(where: { $0.id == id }) {
+            if let r = prefill.trip ?? editingID.flatMap({ id in model.book.trips.first { $0.id == id } }) {
                 t = r
                 useMiles = r.gpsMiles != nil
             } else { reset() }
@@ -445,6 +465,7 @@ struct TripForm: View {
 struct ActivityForm: View {
     @Environment(AppModel.self) private var model
     var editingID: RecordID?
+    var prefill = Prefill()
     @State private var a = ActivityRecord(date: Day.today())
     @State private var source = ""
     @State private var loaded = false
@@ -464,7 +485,10 @@ struct ActivityForm: View {
         .onAppear {
             guard !loaded else { return }
             loaded = true
-            if let id = editingID, let r = model.book.activities.first(where: { $0.id == id }) {
+            if let r = prefill.activity {
+                a = r
+                source = prefill.sourceName(r.attribution.sourceID, in: model.book)
+            } else if let id = editingID, let r = model.book.activities.first(where: { $0.id == id }) {
                 a = r
                 source = model.sourceName(r.attribution.sourceID)
             } else {

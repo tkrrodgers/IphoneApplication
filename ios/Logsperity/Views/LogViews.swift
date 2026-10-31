@@ -140,16 +140,38 @@ struct LogListView: View {
 struct LogForm: View {
     let kind: LogKind
     var editingID: RecordID?
+    /// Unsaved records from HERB ("Edit" on a draft): the form opens with them filled in.
+    var prefill: [LogChange] = []
 
     var body: some View {
+        let pre = Prefill(changes: prefill)
         switch kind {
-        case .prospects: ProspectForm(editingID: editingID)
-        case .closings: ClosingForm(editingID: editingID)
-        case .income: IncomeForm(editingID: editingID)
-        case .expenses: ExpenseForm(editingID: editingID)
-        case .trips: TripForm(editingID: editingID)
-        case .activities: ActivityForm(editingID: editingID)
+        case .prospects: ProspectForm(editingID: editingID, prefill: pre)
+        case .closings: ClosingForm(editingID: editingID, prefill: pre)
+        case .income: IncomeForm(editingID: editingID, prefill: pre)
+        case .expenses: ExpenseForm(editingID: editingID, prefill: pre)
+        case .trips: TripForm(editingID: editingID, prefill: pre)
+        case .activities: ActivityForm(editingID: editingID, prefill: pre)
         }
+    }
+}
+
+/// Records HERB drafted but hasn't saved, for pre-filling a form.
+struct Prefill {
+    var changes: [LogChange] = []
+
+    var prospect: ProspectRecord? { changes.lazy.compactMap { if case .upsertProspect(let r) = $0 { r } else { nil } }.first }
+    var closing: ClosingRecord? { changes.lazy.compactMap { if case .upsertClosing(let r) = $0 { r } else { nil } }.first }
+    var income: IncomeRecord? { changes.lazy.compactMap { if case .upsertIncome(let r) = $0 { r } else { nil } }.first }
+    var expense: ExpenseRecord? { changes.lazy.compactMap { if case .upsertExpense(let r) = $0 { r } else { nil } }.first }
+    var trip: TripRecord? { changes.lazy.compactMap { if case .upsertTrip(let r) = $0 { r } else { nil } }.first }
+    var activity: ActivityRecord? { changes.lazy.compactMap { if case .upsertActivity(let r) = $0 { r } else { nil } }.first }
+
+    /// A source's name, whether it already exists or HERB would create it.
+    func sourceName(_ id: RecordID?, in book: LogBook) -> String {
+        guard let id else { return "" }
+        for c in changes { if case .addSource(let s) = c, s.id == id { return s.name } }
+        return book.sourceName(id) ?? ""
     }
 }
 

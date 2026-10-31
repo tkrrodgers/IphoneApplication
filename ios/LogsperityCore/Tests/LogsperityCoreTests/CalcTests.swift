@@ -260,6 +260,8 @@ func fixture() -> LogBook {
         #expect(LogRules.defaultFollowUp(strength: .hot, from: fri) == Day(2026, 11, 2))
         #expect(LogRules.defaultFollowUp(strength: .medium, from: fri) == Day(2026, 11, 2))
         #expect(LogRules.defaultFollowUp(strength: .cold, from: fri) == Day(2026, 11, 13))
+        #expect(LogRules.defaultFollowUp(strength: .medium, from: Day(2026, 10, 29)) == Day(2026, 11, 2))  // Sun → Mon
+        #expect(LogRules.defaultFollowUp(strength: .noGo, from: fri) == nil)
     }
 }
 

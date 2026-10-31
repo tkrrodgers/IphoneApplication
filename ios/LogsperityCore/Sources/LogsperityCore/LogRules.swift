@@ -73,14 +73,19 @@ public enum LogRules {
         p.attribution.categoryID = "cat.past_client"
     }
 
-    /// The default follow-up from a lead's strength (design §17.2 rule 5): hot → next business day,
-    /// medium → 3 days, cold → 2 weeks.
-    public static func defaultFollowUp(strength: Strength?, from d: Day) -> Day {
+    /// The default follow-up from a lead's strength (design §17.2 rule 5): hot → next business day, medium → 3 days,
+    /// cold → 2 weeks, each rolled past a weekend; no-go → none. Same rule HERB uses.
+    public static func defaultFollowUp(strength: Strength?, from d: Day) -> Day? {
+        let days: Int
         switch strength {
-        case .redHot, .hot: nextBusinessDay(after: d)
-        case .cold, .noGo: d.adding(days: 14)
-        default: d.adding(days: 3)
+        case .redHot, .hot: days = 1
+        case .cold: days = 14
+        case .noGo: return nil
+        default: days = 3
         }
+        var n = d.adding(days: days)
+        while n.weekday >= 5 { n = n.adding(days: 1) }
+        return n
     }
 
     public static func nextBusinessDay(after d: Day) -> Day {
