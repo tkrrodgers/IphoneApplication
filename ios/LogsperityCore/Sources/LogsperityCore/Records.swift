@@ -215,7 +215,7 @@ public struct PlanInputs: Hashable, Codable, Sendable {
 }
 
 /// Everything the engine needs: the six logs, sources and plans. The app builds one from SwiftData.
-public struct LogBook: Sendable {
+public struct LogBook: Codable, Sendable {
     public var prospects: [ProspectRecord] = []
     public var closings: [ClosingRecord] = []
     public var income: [IncomeRecord] = []

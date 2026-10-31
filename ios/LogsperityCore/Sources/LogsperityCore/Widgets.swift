@@ -1,6 +1,6 @@
 import Foundation
 
-// Report widgets (CONTRACT.md "Widget JSON"): every report, the Coach screen and the Annual Report are lists
+// Report widgets (CONTRACT.md "ReportWidget JSON"): every report, the Coach screen and the Annual Report are lists
 // of these. The app draws each kind once; the engine decides what goes in them.
 
 public enum ValueFormat: String, Sendable {
@@ -46,7 +46,7 @@ public struct Column: Hashable, Sendable {
     }
 }
 
-public typealias TableRow = [String: Cell]
+public typealias ReportRow = [String: Cell]
 
 public struct StatItem: Hashable, Sendable {
     public let label: String
@@ -86,6 +86,18 @@ public struct ProgressItem: Hashable, Sendable {
     public let displayProjected: String
     public let displayGoal: String
     public let pacePct: Double?
+
+    public init(label: String, actual: Double, projected: Double, goal: Double, displayActual: String,
+                displayProjected: String, displayGoal: String, pacePct: Double?) {
+        self.label = label
+        self.actual = actual
+        self.projected = projected
+        self.goal = goal
+        self.displayActual = displayActual
+        self.displayProjected = displayProjected
+        self.displayGoal = displayGoal
+        self.pacePct = pacePct
+    }
 }
 
 public struct IndexDriver: Hashable, Sendable {
@@ -124,11 +136,11 @@ public struct ColumnSeriesItem: Hashable, Sendable {
     public let displays: [String]
 }
 
-public struct Widget: Identifiable, Sendable {
+public struct ReportWidget: Identifiable, Sendable {
     public enum Content: Sendable {
         case stat(value: Double?, display: String, caption: String?, formula: String?)
         case stats([StatItem])
-        case table(columns: [Column], rows: [TableRow], total: TableRow?, note: String?)
+        case table(columns: [Column], rows: [ReportRow], total: ReportRow?, note: String?)
         case bar([ChartItem], horizontal: Bool)
         case pie([ChartItem], center: String?, caption: String?)
         case stack([ChartItem])
