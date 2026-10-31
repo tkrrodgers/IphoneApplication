@@ -58,6 +58,27 @@ public enum Format {
         return withYear ? s + ", \(d.year)" : s
     }
 
+    /// "today", "tomorrow", "yesterday", a weekday this coming week, else "Nov 2".
+    public static func relativeDay(_ d: Day?, now: Day) -> String {
+        guard let d else { return dash }
+        let delta = now.days(to: d)
+        switch delta {
+        case 0: return "today"
+        case 1: return "tomorrow"
+        case -1: return "yesterday"
+        case 2..<7: return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][d.weekday]
+        default: return shortDate(d)
+        }
+    }
+
+    /// "1 hour 30 minutes", "2 hours", "45 minutes".
+    public static func spokenMinutes(_ m: Int) -> String {
+        let (h, mm) = (m / 60, m % 60)
+        let hs = "\(h) hour\(h > 1 ? "s" : "")"
+        if h > 0 && mm > 0 { return "\(hs) \(mm) minutes" }
+        return h > 0 ? hs : "\(mm) minutes"
+    }
+
     /// "Monday, Nov 2".
     public static func spokenDate(_ d: Day) -> String {
         let names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
