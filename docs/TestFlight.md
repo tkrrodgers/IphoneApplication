@@ -36,8 +36,8 @@ Drafts for the fields App Store Connect asks for when you set up external testin
 
 **Feedback Email**: the Prosperity Simplified support address (see `ios/Logsperity/App/AppConfig.swift`).
 
-**Marketing URL** (optional) and **Privacy Policy URL** (required for external testing): host `docs/privacy-policy.md`
-on the Prosperity Simplified website, or turn on GitHub Pages for this repository.
+**Privacy Policy URL** (required for external testing): https://tkrrodgers.github.io/IphoneApplication/privacy-policy.html
+(published from `docs/privacy-policy.md` with GitHub Pages; edits to that file update the page).
 
 **Beta App Review Information**: contact name, phone and email for Apple's reviewer. No sign-in is required, so
 leave "Sign-in required" unchecked. Notes for the reviewer:
