@@ -16,3 +16,8 @@ tools_reports/
 .DS_Store
 xcuserdata/
 DerivedData/
+
+# Swift
+.build/
+.swiftpm/
+*.xcodeproj/
