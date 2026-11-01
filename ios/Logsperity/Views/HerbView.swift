@@ -154,8 +154,10 @@ struct HerbView: View {
         .padding()
         .background(.bar)
         .overlay(alignment: .top) {
-            if speech.state == .denied {
-                Text("Turn on Microphone and Speech Recognition for Logsperity in Settings to talk to HERB.")
+            if speech.state == .denied || speech.state == .unavailable {
+                Text(speech.state == .denied
+                     ? "Turn on Microphone and Speech Recognition for Logsperity in Settings to talk to HERB."
+                     : "Voice isn't available right now. Check that Dictation is on in Settings → General → Keyboard. You can still type to HERB.")
                     .font(.caption).padding(8).background(.yellow.opacity(0.3), in: .rect(cornerRadius: 8)).offset(y: -44)
             }
         }

@@ -17,9 +17,7 @@ final class SpeechInput {
     private var task: SFSpeechRecognitionTask?
 
     func authorize() async -> Bool {
-        let speech = await withCheckedContinuation { cont in
-            SFSpeechRecognizer.requestAuthorization { cont.resume(returning: $0 == .authorized) }
-        }
+        let speech = await Self.requestSpeechAuthorization()
         #if os(iOS)
         let mic = await AVAudioApplication.requestRecordPermission()
         #else
@@ -45,20 +43,18 @@ final class SpeechInput {
             if recognizer.supportsOnDeviceRecognition { req.requiresOnDeviceRecognition = true }
             req.addsPunctuation = true
             request = req
-            let input = engine.inputNode
-            input.removeTap(onBus: 0)
-            input.installTap(onBus: 0, bufferSize: 1024, format: input.outputFormat(forBus: 0)) { buffer, _ in
-                req.append(buffer)
-            }
+            Self.feed(engine.inputNode, into: req)
             engine.prepare()
             try engine.start()
             state = .listening
-            task = recognizer.recognitionTask(with: req) { [weak self] result, error in
-                let text = result?.bestTranscription.formattedString
-                let done = error != nil || (result?.isFinal ?? false)
+            task = Self.recognize(req, with: recognizer) { [weak self] text, done, failed in
                 Task { @MainActor in
-                    if let text { self?.transcript = text }
-                    if done { self?.stopAudio() }
+                    guard let self else { return }
+                    let wasListening = self.state == .listening  // false once the user tapped stop
+                    if let text { self.transcript = text }
+                    if done { self.stopAudio() }
+                    // Recognition failed before hearing anything (e.g. Dictation is off): say so instead of going quiet.
+                    if failed && wasListening && self.transcript.isEmpty { self.state = .unavailable }
                 }
             }
         } catch {
@@ -73,6 +69,30 @@ final class SpeechInput {
         request?.endAudio()
         stopAudio()
         return transcript
+    }
+
+    // Apple calls these back on its own threads. They're nonisolated so Swift doesn't treat the callbacks as
+    // main-thread code: under Swift 6 that check crashes the app the moment the callback arrives (it did when
+    // testers tapped Allow on the speech permission prompt).
+
+    nonisolated private static func requestSpeechAuthorization() async -> Bool {
+        await withCheckedContinuation { cont in
+            SFSpeechRecognizer.requestAuthorization { cont.resume(returning: $0 == .authorized) }
+        }
+    }
+
+    nonisolated private static func feed(_ input: AVAudioInputNode, into request: SFSpeechAudioBufferRecognitionRequest) {
+        input.removeTap(onBus: 0)
+        input.installTap(onBus: 0, bufferSize: 1024, format: input.outputFormat(forBus: 0)) { buffer, _ in
+            request.append(buffer)
+        }
+    }
+
+    nonisolated private static func recognize(_ request: SFSpeechAudioBufferRecognitionRequest, with recognizer: SFSpeechRecognizer,
+                                              update: @escaping @Sendable (String?, Bool, Bool) -> Void) -> SFSpeechRecognitionTask {
+        recognizer.recognitionTask(with: request) { result, error in
+            update(result?.bestTranscription.formattedString, error != nil || (result?.isFinal ?? false), error != nil)
+        }
     }
 
     private func stopAudio() {
