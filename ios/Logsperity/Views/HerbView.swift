@@ -42,6 +42,7 @@ struct HerbView: View {
                         }
                         .padding()
                     }
+                    .scrollDismissesKeyboard(.immediately)
                     .onChange(of: messages.count) { _, _ in
                         withAnimation { proxy.scrollTo(draft != nil ? AnyHashable("draft") : AnyHashable(messages.last?.id), anchor: .bottom) }
                     }

@@ -47,6 +47,20 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         CODE_SIGN_STYLE: Automatic
         ENABLE_PREVIEWS: YES
+  # Narrated training tour (not shipped): drives the app in the simulator. Run demo/run-demo.sh.
+  LogsperityDemo:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: LogsperityDemo
+    dependencies:
+      - target: Logsperity
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.prosperitysimplified.logsperity.demo
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Automatic
 schemes:
   Logsperity:
     build:
@@ -56,3 +70,12 @@ schemes:
       config: Debug
     archive:
       config: Release
+  LogsperityDemo:
+    build:
+      targets:
+        Logsperity: all
+        LogsperityDemo: [test]
+    test:
+      config: Debug
+      targets:
+        - LogsperityDemo
