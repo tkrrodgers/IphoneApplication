@@ -1,4 +1,5 @@
 import Foundation
+import LogsperityCore
 
 /// Account Set Up (design §8.1) and app preferences. No card fields, ever (decision D1).
 struct AppSettings: Codable, Equatable {
@@ -21,6 +22,10 @@ struct AppSettings: Codable, Equatable {
     /// HERB Autopilot style chosen at onboarding (§8.2): handsOn | balanced | max.
     var autopilotStyle = "balanced"
     var herbSpeaks = true
+    /// After HERB answers, listen again for the user's reply until the conversation is done (hands-free).
+    var herbHandsFree = true
+    /// How long a pause ends what the user is saying: short | normal | long (`HerbPause`).
+    var herbPause = "normal"
     /// Insight keys the user dismissed on the Coach screen.
     var dismissedInsights: [String] = []
     /// Optional fields the user keeps skipping (§17.2 "HERB learns what the user doesn't want to be asked").
@@ -28,6 +33,8 @@ struct AppSettings: Codable, Equatable {
     /// Fields HERB stopped offering after three skips in a row.
     var herbNeverAsk: [String] = []
     var usingSampleData = false
+
+    var pause: HerbPause { HerbPause(rawValue: herbPause) ?? .normal }
 
     var firstName: String { name.split(separator: " ").first.map(String.init) ?? "" }
 
@@ -56,6 +63,8 @@ struct AppSettings: Codable, Equatable {
         questionStyle = v(.questionStyle, d.questionStyle)
         autopilotStyle = v(.autopilotStyle, d.autopilotStyle)
         herbSpeaks = v(.herbSpeaks, d.herbSpeaks)
+        herbHandsFree = v(.herbHandsFree, d.herbHandsFree)
+        herbPause = v(.herbPause, d.herbPause)
         dismissedInsights = v(.dismissedInsights, d.dismissedInsights)
         herbSkipCounts = v(.herbSkipCounts, d.herbSkipCounts)
         herbNeverAsk = v(.herbNeverAsk, d.herbNeverAsk)

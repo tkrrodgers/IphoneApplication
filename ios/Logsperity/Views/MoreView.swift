@@ -94,6 +94,14 @@ struct HerbSettingsView: View {
                 .pickerStyle(.inline)
             } footer: { Text("HERB always asks where a new prospect came from. \"I don't know\" is fine — it waits in the Review queue.") }
             Section {
+                Toggle("Keep listening after HERB answers", isOn: Binding(get: { model.settings.herbHandsFree }, set: { v in model.updateSettings { $0.herbHandsFree = v } }))
+                Picker("Pause before HERB answers", selection: Binding(get: { model.settings.pause }, set: { v in model.updateSettings { $0.herbPause = v.rawValue } })) {
+                    ForEach(HerbPause.allCases, id: \.self) { Text($0.label).tag($0) }
+                }
+            } header: { Text("Talking to HERB") } footer: {
+                Text("Tap the mic once and talk. HERB answers when you pause, then listens for your reply. Choose Long if you pause while reading numbers. Say \"send\" to answer right away, or \"stop\" or \"that's all\" to finish.")
+            }
+            Section {
                 Toggle("HERB speaks replies", isOn: Binding(get: { model.settings.herbSpeaks }, set: { v in model.updateSettings { $0.herbSpeaks = v } }))
                 if !model.settings.herbNeverAsk.isEmpty {
                     Button("Ask me about skipped fields again") { model.updateSettings { $0.herbSkipCounts = [:]; $0.herbNeverAsk = [] } }

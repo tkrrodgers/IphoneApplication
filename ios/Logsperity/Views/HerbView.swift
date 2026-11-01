@@ -2,7 +2,8 @@ import LogsperityCore
 import SwiftUI
 
 /// Ask HERB (S19): talk or type. HERB fills in drafts, asks one question at a time (design §17.2), saves only on
-/// "yes", and answers questions about your numbers. Push-to-talk: tap the mic, speak, tap again to send.
+/// "yes", and answers questions about your numbers. Hands-free: tap the mic once and talk; HERB answers when you
+/// pause, speaks its reply, and listens again until the conversation is done (`HerbConversation`).
 struct HerbView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
@@ -13,6 +14,9 @@ struct HerbView: View {
     @State private var speech = SpeechInput()
     @State private var voice = SpeechOutput()
     @State private var target: Target?
+    /// In a hands-free conversation: HERB listens again after each reply.
+    @State private var conversing = false
+    @State private var herbTalking = false
     @FocusState private var typing: Bool
 
     struct Message: Identifiable {
@@ -51,11 +55,12 @@ struct HerbView: View {
             }
             .navigationTitle("HERB").inlineTitle()
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Done") { voice.stop(); speech.stop(); dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("Done") { endConversation(); voice.stop(); dismiss() } }
                 if state != nil {
                     ToolbarItem(placement: .primaryAction) { Button("Start over") { send("cancel") } }
                 }
             }
+            .onChange(of: typing) { _, now in if now { endConversation() } }  // typing instead of talking
             .sheet(item: $target) { t in
                 NavigationStack {
                     switch t.kind {
@@ -133,23 +138,11 @@ struct HerbView: View {
     }
 
     private var inputBar: some View {
-        HStack(spacing: 10) {
-            TextField(speech.state == .listening ? "Listening…" : "Type or tap the mic", text: speech.state == .listening ? .constant(speech.transcript) : $text, axis: .vertical)
-                .lineLimit(1...4)
-                .textFieldStyle(.roundedBorder)
-                .focused($typing)
-                .onSubmit { send(text) }
-            if !text.isEmpty && speech.state != .listening {
-                Button { send(text) } label: { Image(systemName: "arrow.up.circle.fill").font(.title) }
-                    .accessibilityLabel("Send")
-            } else {
-                Button { toggleMic() } label: {
-                    Image(systemName: speech.state == .listening ? "stop.circle.fill" : "mic.circle.fill")
-                        .font(.system(size: 38)).foregroundStyle(speech.state == .listening ? Color.red : Color.brandBlue)
-                        .symbolEffect(.pulse, isActive: speech.state == .listening)
-                }
-                .accessibilityLabel(speech.state == .listening ? "Stop and send" : "Talk to HERB")
+        VStack(spacing: 6) {
+            if let hint = statusHint {
+                Text(hint).font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
             }
+            inputRow
         }
         .padding()
         .background(.bar)
@@ -163,22 +156,97 @@ struct HerbView: View {
         }
     }
 
+    private var statusHint: String? {
+        if speech.state == .listening { return "Listening — HERB answers when you pause. Tap to stop." }
+        if herbTalking { return "HERB is talking — tap to interrupt." }
+        return nil
+    }
+
+    private var inputRow: some View {
+        HStack(spacing: 10) {
+            TextField(speech.state == .listening ? "Listening…" : "Type or tap the mic", text: speech.state == .listening ? .constant(speech.transcript) : $text, axis: .vertical)
+                .lineLimit(1...4)
+                .textFieldStyle(.roundedBorder)
+                .focused($typing)
+                .onSubmit { send(text) }
+            if !text.isEmpty && speech.state != .listening {
+                Button { send(text) } label: { Image(systemName: "arrow.up.circle.fill").font(.title) }
+                    .accessibilityLabel("Send")
+            } else {
+                Button { micTapped() } label: {
+                    Image(systemName: speech.state == .listening ? "stop.circle.fill" : herbTalking ? "speaker.wave.2.circle.fill" : "mic.circle.fill")
+                        .font(.system(size: 38)).foregroundStyle(speech.state == .listening ? Color.red : Color.brandBlue)
+                        .symbolEffect(.pulse, isActive: speech.state == .listening || herbTalking)
+                }
+                .accessibilityLabel(speech.state == .listening ? "Stop listening" : herbTalking ? "Interrupt HERB" : "Talk to HERB")
+            }
+        }
+    }
+
     // MARK: Turns
 
-    private func toggleMic() {
-        if speech.state == .listening {
-            let heard = speech.stop()
-            send(heard)
-        } else {
-            voice.stop()
-            typing = false
-            Task { await speech.start() }
+    /// Mic button: start a conversation, interrupt HERB while it's talking, or stop listening.
+    private func micTapped() {
+        if herbTalking {
+            conversing = true
+            voice.stop()  // `speakThenListen` carries on and listens
+            return
         }
+        if speech.state == .listening {
+            conversing = false
+            let heard = speech.stop()
+            if !heard.isEmpty { send(heard) }
+            return
+        }
+        typing = false
+        conversing = true
+        listen(timeout: HerbConversation.firstTimeout)
+    }
+
+    private func listen(timeout: Double) {
+        Task {
+            await speech.start(pause: model.settings.pause.seconds, noSpeechTimeout: timeout) { heard in
+                handleHeard(heard)
+            }
+        }
+    }
+
+    /// One spoken turn finished: nil means the user said nothing, so the conversation ends quietly.
+    private func handleHeard(_ heard: String?) {
+        guard conversing else { return }
+        guard let heard else { conversing = false; return }
+        if HerbConversation.isGoodbye(heard) {
+            conversing = false
+            messages.append(Message(fromUser: true, text: heard))
+            messages.append(Message(fromUser: false, text: "Okay. Tap the mic when you need me."))
+            if model.settings.herbSpeaks { voice.say("Okay.") }
+            return
+        }
+        send(heard)
+    }
+
+    /// HERB speaks its reply, then listens for the user's next turn if the conversation goes on.
+    private func speakThenListen(_ say: String, next: Double?) async {
+        if model.settings.herbSpeaks && !say.isEmpty {
+            herbTalking = true
+            await voice.speak(say)
+            herbTalking = false
+        }
+        guard conversing, model.settings.herbHandsFree, target == nil, let next else { conversing = false; return }
+        try? await Task.sleep(for: .milliseconds(300))  // let the speaker go quiet so HERB doesn't hear itself
+        guard conversing, speech.state != .listening else { return }
+        listen(timeout: next)
+    }
+
+    private func endConversation() {
+        conversing = false
+        if speech.state == .listening { speech.stop() }
     }
 
     private func send(_ raw: String) {
         let t = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !t.isEmpty else { return }
+        if speech.state == .listening { speech.stop() }  // a tapped reply or example replaces what's being said
         text = ""
         messages.append(Message(fromUser: true, text: t))
         let reply = model.herb().respond(to: t, state: state)
@@ -188,8 +256,9 @@ struct HerbView: View {
         var shown = reply.display ?? reply.say
         if let saved = reply.saved, reply.changes.isEmpty == false, shown.isEmpty { shown = "Saved to \(saved.rawValue)." }
         messages.append(Message(fromUser: false, text: shown, cards: reply.cards, actions: reply.actions))
-        if model.settings.herbSpeaks { voice.say(reply.say) }
         if reply.openForm, let d = reply.draft { edit(d) }
+        let next = HerbConversation.listenAgain(after: reply)
+        Task { await speakThenListen(reply.say, next: next) }
     }
 
     private func act(_ a: HerbAction) {
@@ -204,6 +273,7 @@ struct HerbView: View {
     }
 
     private func open(_ t: HerbTarget) {
+        endConversation()
         switch t {
         case .report(let key), .emailReport(let key): target = Target(kind: .report(key))
         case .receiptScanner: target = Target(kind: .form(.expenses, []))
@@ -221,7 +291,8 @@ struct HerbView: View {
             state = nil
             draft = nil
             messages.append(Message(fromUser: false, text: saved.say))
-            if model.settings.herbSpeaks { voice.say(saved.say) }
+            if speech.state == .listening { speech.stop() }
+            Task { await speakThenListen(saved.say, next: HerbConversation.followUpTimeout) }
         } catch {
             messages.append(Message(fromUser: false, text: "I couldn't save that: \(error)"))
         }
@@ -230,6 +301,7 @@ struct HerbView: View {
     /// "Edit" opens the form with everything HERB heard filled in. Nothing is saved unless the form is saved.
     private func edit(_ d: HerbDraft) {
         guard let saved = try? model.herb().confirm(d), let kind = LogKind(rawValue: d.log.rawValue) else { return }
+        endConversation()
         state = nil
         draft = nil
         target = Target(kind: .form(kind, saved.changes))
