@@ -38,7 +38,7 @@ Evan thinks we should start with a small price point. We could start with $5–1
 - Please change "Networking Open Group" and "Networking Closed Group" to just "Networking".
 - For the analytics and coaching to work, users have to input the items in red. If a user is on the run, they can set up a hint that can be converted to a full entry later. I think we could get Herb to input Pillar, Category, and Activity Used from commonly used Sources.
 
-  *(Screenshot not included: the form with fields for contact information, including phone numbers, email addresses and other details, with options for follow-up and additional notes.)*
+  ![Prospects Input screen: required fields in red](images/prospects-input-screen.png)
 
 ### Prospects
 
@@ -79,3 +79,43 @@ Evan thinks we should start with a small price point. We could start with $5–1
 ## Coaching
 
 I will dig into this more, but this is pretty amazing from what I can see.
+
+---
+
+## Status — build 0.1.0 (5)
+
+**Done in build 5**
+
+| Feedback | What changed |
+|---|---|
+| Siri not turned on | HERB's voice needs Dictation, not Siri. If voice isn't available, HERB now says exactly where to turn it on (Settings → General → Keyboard → Enable Dictation). |
+| Logo / icon | New bold target-and-arrows icon (build 4). |
+| Loan-specific language | HERB now says "transaction size" and "deal" instead of "loan amount" and "loan". |
+| PARC order | Pillars show as Prospecting, Advertising, Relationships, Clients everywhere (pickers, reports, cheat sheet). |
+| Hint | Any prospect, expense or trip can be saved with what you have: Save turns into **Save as hint**. It waits in the Review queue, and HERB asks for the missing fields later. |
+| Strength colors | Red Hot = red, Hot = orange, Medium = yellow, Cold = blue, No Go = black, shown in the Prospects list and picker. |
+| Couples | New "Second first name (couples)" field; saved as "Tom & Ana". |
+| Networking | "Networking-Open Group" and "Networking-Closed Group" (and the "Network-Open Group" category) are now just "Networking". Existing entries move over automatically. |
+| Required fields in red | The prospect form follows the Prospects Input screen: date, last name, first name, pillar, category, source and activity used first, in red until filled in. Phone 2, Email 2, city and state added. |
+| HERB fills in from Sources | Picking a source you've used before fills in its usual pillar, category and activity (only empty fields; you can change them). |
+| Save & Next | Clears every field except the date. |
+| Plan of action | Added Text, Video Message, Social Media Message. Removed Email, Phone and Mail Campaign. |
+| Closings — prospect list | Alphabetical by last name ("Becker, Tom & Ana"). |
+| Expenses — blank category | A new expense starts with no group or category chosen. |
+| Vendor capitalization | Each word is capitalized as you type and on save ("Cedar Grill"). |
+| Recurring expenses | New "Recurring monthly charge" toggle. At the start of each month, Today shows **Monthly charges** — tap Log to add this month's charge or Stopped to stop asking. |
+| IRS mileage rate | $0.725/mile for all of 2026. |
+| Mileage reason | Free-text field with suggestions from your past trips (most used first), then the standard list. |
+| Activity quarter hours | Activity times show to the quarter hour (1.25 h, 0.75 h). |
+| Activity list | Removed Lead Generation, Facebook Marketing and Twitter Marketing. Added Social Media Content Creation, Social Media Interaction and Livestreaming (under Clients and Advertising – Internet). Existing entries move over automatically. |
+
+**Next — needs a decision or an outside service**
+
+| Feedback | What it needs |
+|---|---|
+| Industry-specific categories and activities (realtor, legal, therapy, construction) | Agreement on each industry's lists; then a profession choice at setup picks the list. |
+| Add several people as a group on one prospect | A "group" link between prospects and how closings and income split across them. |
+| Link bank and credit card accounts; auto-log 100%-business accounts | A bank-data provider (for example Plaid), a small server to hold the connection, and its monthly cost. |
+| GPS: ask "Is this a business trip?" when driving during business hours | Location permission ("Always"), battery testing, and a privacy policy update. |
+| Gamification (prizes, badges) | Which rewards to offer and who provides them. |
+| Pricing and advertising/affiliate income | Business decision; In-App Purchase is set up before the App Store release. |

@@ -49,7 +49,7 @@ final class AppModel {
 
     init(store: FileStore = FileStore()) {
         self.store = store
-        book = store.loadBook() ?? LogBook()
+        book = (store.loadBook() ?? LogBook()).migratingTaxonomy()  // renamed list items (e.g. "Networking")
         settings = store.loadSettings() ?? AppSettings()
     }
 
@@ -141,6 +141,25 @@ final class AppModel {
 
     func sourceName(_ id: RecordID?) -> String { book.sourceName(id) ?? "" }
 
+    /// An existing source by name (never creates one), for filling in a form from past entries.
+    func existingSourceID(named name: String) -> RecordID? {
+        let norm = SourceRecord.normalize(name.trimmingCharacters(in: .whitespacesAndNewlines))
+        guard !norm.isEmpty else { return nil }
+        return book.sources.first { SourceRecord.normalize($0.name) == norm }?.id
+    }
+
+    // MARK: Recurring charges
+
+    /// "Still paying?" → yes: logs this month's charge.
+    func renewRecurring(_ e: ExpenseRecord) { save(e.renewed(on: today)) }
+
+    /// "Still paying?" → no: stops asking about it.
+    func stopRecurring(_ e: ExpenseRecord) {
+        guard let i = book.expenses.firstIndex(where: { $0.id == e.id }) else { return }
+        book.expenses[i].recurring = false
+        persist()
+    }
+
     /// Previously used names for autocomplete, most used first.
     func sourceSuggestions(matching text: String) -> [String] {
         let q = text.lowercased()
@@ -183,6 +202,18 @@ final class AppModel {
     }
 
     /// Dismissing an auto-captured item deletes it.
+    /// After editing an item from the Review queue: confirms it, unless it's a hint that still needs something.
+    func confirmReviewIfFinished(_ item: ReviewItem) {
+        let notes: String?? = switch item.log {
+        case .prospects: book.prospects.first { $0.id == item.recordID }?.notes
+        case .expenses: book.expenses.first { $0.id == item.recordID }?.notes
+        case .trips: book.trips.first { $0.id == item.recordID }?.notes
+        default: nil
+        }
+        if let notes, LogRules.isHint(notes) { return }
+        confirmReview(item)
+    }
+
     func dismissReview(_ item: ReviewItem) {
         delete(LogKind(rawValue: item.log.rawValue)!, id: item.recordID)
     }

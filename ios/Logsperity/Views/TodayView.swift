@@ -41,6 +41,25 @@ struct TodayView: View {
                         }
                     }
 
+                    let due = model.book.recurringDue(now: model.today)
+                    if !due.isEmpty {
+                        Card(title: "Monthly charges") {
+                            Text("Still paying these? Log adds this month's charge.").font(.caption).foregroundStyle(.secondary)
+                            ForEach(due) { e in
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(e.vendor.isEmpty ? (e.category?.name ?? "Expense") : e.vendor).font(.subheadline.bold())
+                                        Text(Format.money(e.amount, cents: true)).font(.caption).foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    Button("Log") { model.renewRecurring(e) }.buttonStyle(.borderedProminent)
+                                    Button("Stopped") { model.stopRecurring(e) }.buttonStyle(.bordered)
+                                }
+                                .controlSize(.small)
+                            }
+                        }
+                    }
+
                     let focus = coach.focus()
                     if !focus.items.isEmpty {
                         Card(title: "This week's focus") {

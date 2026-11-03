@@ -277,7 +277,7 @@ extension HerbSession {
                     : st.frame == "update" ? Format.dash : "None")
             }
             if m.has("loanAmount") || m.has("loanPurpose") {
-                row("loan", "Loan", (m.text("loanPurpose") ?? "purchase").pyCapitalize
+                row("loan", "Deal", (m.text("loanPurpose") ?? "purchase").pyCapitalize
                     + (m.num("loanAmount").flatMap { $0 == 0 ? nil : " · ~\(Format.money($0))" } ?? ""))
             }
             if st.frame == "update" && d.has("notes") { row(nil, "Note added", composeNotes(st)) }
@@ -435,7 +435,7 @@ extension HerbSession {
             case "reason":
                 if let r = d.text("reason"), !(d.str("destination") ?? "").lowercased().contains(r.lowercased()) { out.append("for \(r)") }
             case "client": if let n = m.text("name") { out.append(n) }
-            case "size": if let s = d.num("transactionSize"), s != 0 { out.append("\(Format.money(s)) loan") }
+            case "size": if let s = d.num("transactionSize"), s != 0 { out.append("\(Format.money(s)) transaction") }
             case "income": if let i = d.num("income"), i != 0 { out.append("you earned \(Format.money(i))") }
             default: break
             }
@@ -492,7 +492,7 @@ extension HerbSession {
         case ("prospects", "followUp"), ("update", "followUp"):
             return ("When should you follow up with \(nm)\(frame == "update" ? " next" : "")?", ["Tomorrow", "Next week", "In 2 weeks", "No follow-up"])
         case ("prospects", "strength"): return ("How hot is \(nm) — hot, warm or cold?", ["Hot", "Warm", "Cold"])
-        case ("prospects", "loan"): return ("Do you know the loan yet — purchase or refinance, and roughly how much?", ["Skip"])
+        case ("prospects", "loan"): return ("Do you know the deal yet — what kind, and roughly how much?", ["Skip"])
         case ("expenses", "amount"), ("income", "amount"): return ("How much was it?", [])
         case ("expenses", "category"):
             if m.has("elseAsked") { return ("In a few words, what was it for?", []) }
@@ -525,7 +525,7 @@ extension HerbSession {
         case ("closings", "pick"):
             let names = m["candidates"]?.list?.compactMap { $0.object?["name"]?.string } ?? []
             return ("Which one — \(joinAnd(names).replacingOccurrences(of: " and ", with: " or "))?", names)
-        case ("closings", "size"): return ("What was the loan amount?", [])
+        case ("closings", "size"): return ("What was the transaction size?", [])
         case ("closings", "income"): return ("What did you earn on it?", [])
         default: return ("Can you tell me more?", skip)
         }

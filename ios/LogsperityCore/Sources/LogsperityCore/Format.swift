@@ -47,6 +47,15 @@ public enum Format {
         return grouped(x, decimals: 1) + " h"
     }
 
+    /// Logged time to the quarter hour: 1.25 h, 1.5 h, 2 h (activities are logged in 15-minute steps, so one
+    /// decimal would show 1.25 as 1.3).
+    public static func quarterHours(_ x: Double?) -> String {
+        guard let x else { return dash }
+        let quarters = (x * 4).rounded() / 4
+        let decimals = quarters == quarters.rounded() ? 0 : (quarters * 2 == (quarters * 2).rounded() ? 1 : 2)
+        return grouped(quarters, decimals: decimals) + " h"
+    }
+
     public static func miles(_ x: Double?) -> String {
         guard let x else { return dash }
         return grouped(x, decimals: 1) + " mi"

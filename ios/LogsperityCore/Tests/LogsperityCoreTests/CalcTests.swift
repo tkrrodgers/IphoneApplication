@@ -187,9 +187,10 @@ func fixture() -> LogBook {
         #expect(approx(led.index, logsperityIndex(netROI: led.netROI, margin: led.margin, conversion: 0.25)!))
     }
 
-    @Test func splitMileageRate() {
-        #expect(Taxonomy.mileageRate(on: Day(2026, 6, 30)) == 0.725)
-        #expect(Taxonomy.mileageRate(on: Day(2026, 7, 1)) == 0.76)
+    @Test func mileageRate2026() {  // IRS rate for all of 2026 (pilot feedback)
+        #expect(Taxonomy.mileageRate(on: Day(2026, 1, 1)) == 0.725)
+        #expect(Taxonomy.mileageRate(on: Day(2026, 7, 1)) == 0.725)
+        #expect(Taxonomy.mileageRate(on: Day(2025, 6, 1)) == 0.70)
     }
 
     @Test func scorecard() throws {
@@ -268,7 +269,9 @@ func fixture() -> LogBook {
 @Suite struct TaxonomyTests {
     @Test func countsMatchDesign() {
         #expect(Taxonomy.categories.count == 63)
-        #expect(Taxonomy.activities.count == 53)
+        // Pilot feedback: Facebook/Twitter and Lead Generation out; Social Media Content Creation, Social Media
+        // Interaction and Livestreaming in (under Clients and Advertising – Internet).
+        #expect(Taxonomy.activities.count == 56)
     }
 
     @Test func idsMatchSimulator() {

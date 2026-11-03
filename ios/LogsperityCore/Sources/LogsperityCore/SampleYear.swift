@@ -59,7 +59,7 @@ public struct SampleYear {
         ("Cedar & Main Realty", "act.relationship_building_professional"), ("Prairie Oak Realty", "act.relationship_building_professional"),
         ("Denton County Title", nil), ("Client home – Hickory St", "act.past_client_interaction"),
         ("Client home – Bell Ave", "act.current_client_interaction"), ("Okafor Insurance", "act.relationship_building_professional"),
-        ("Hale & Co. CPAs", "act.relationship_building_professional"), ("Denton Chamber of Commerce", "act.networking_open_group"),
+        ("Hale & Co. CPAs", "act.relationship_building_professional"), ("Denton Chamber of Commerce", "act.networking.prospecting"),
         ("Bank branch – University Dr", nil), ("Coffee meeting – Sundance Coffee", nil),
     ]
     struct Stream {
@@ -72,7 +72,7 @@ public struct SampleYear {
         Stream(key: "jared", count: 10, closes: 3, sub: .professional, cat: "cat.realtor", act: "act.relationship_building_professional", sources: ["Jared Cole"], kind: "person"),
         Stream(key: "ruth", count: 12, closes: 3, sub: .professional, cat: "cat.realtor", act: "act.relationship_building_professional", sources: ["Ruth Alvarez"], kind: "person"),
         Stream(key: "kim", count: 13, closes: 1, sub: .professional, cat: "cat.realtor", act: "act.relationship_building_professional", sources: ["Kim Tran"], kind: "person"),
-        Stream(key: "brenda", count: 5, closes: 2, sub: .professional, cat: "cat.insurance_agent", act: "act.networking_closed_group", sources: ["Brenda Okafor"], kind: "person"),
+        Stream(key: "brenda", count: 5, closes: 2, sub: .professional, cat: "cat.insurance_agent", act: "act.networking.relationships", sources: ["Brenda Okafor"], kind: "person"),
         Stream(key: "tom", count: 4, closes: 1, sub: .professional, cat: "cat.accountant", act: "act.relationship_building_professional", sources: ["Tom Hale"], kind: "person"),
         Stream(key: "family", count: 6, closes: 2, sub: .personal, cat: "cat.family", act: "act.relationship_building_personal", sources: ["Mike Reed", "Sarah Lin", "Dave Ortiz"], kind: "person"),
         Stream(key: "church", count: 3, closes: 0, sub: .personal, cat: "cat.church", act: "act.community_involvement_personal", sources: ["Grace Community Church"], kind: "company"),
@@ -83,7 +83,7 @@ public struct SampleYear {
         Stream(key: "open_house", count: 16, closes: 1, sub: .prospecting, cat: "cat.open_house", act: "act.open_houses", sources: nil, kind: "venue"),
         Stream(key: "door", count: 5, closes: 0, sub: .prospecting, cat: "cat.door_knocking", act: "act.door_knocking", sources: ["Savannah neighborhood"], kind: "venue"),
         Stream(key: "seminar", count: 8, closes: 2, sub: .prospecting, cat: "cat.seminar", act: "act.seminar", sources: ["First-Time Buyer Seminar"], kind: "venue"),
-        Stream(key: "chamber", count: 5, closes: 1, sub: .prospecting, cat: "cat.network_open_group", act: "act.networking_open_group", sources: ["Denton Chamber mixer"], kind: "company"),
+        Stream(key: "chamber", count: 5, closes: 1, sub: .prospecting, cat: "cat.networking", act: "act.networking.prospecting", sources: ["Denton Chamber mixer"], kind: "company"),
     ]
     static let openHouseAddresses = ["2201 Bonnie Brae", "418 Pecan Ln", "1702 Emerson Ct", "93 Hilltop Dr", "3310 Teasley Ln",
                                      "750 Mockingbird Ln", "1215 Egan St", "88 Lakeview Blvd", "605 Fulton St", "2904 Wind River Ln",
@@ -278,7 +278,7 @@ public struct SampleYear {
                 acts.append(("act.relationship_building_professional", r.choice([45, 60, 75]),
                              r.choice(realtors.filter { $0 != "Jared Cole" || d < jaredCutoff })))
             }
-            if wd == 2 { acts.append(("act.networking_closed_group", 60, d.day <= 7 ? "Brenda Okafor" : nil)) }
+            if wd == 2 { acts.append(("act.networking.relationships", 60, d.day <= 7 ? "Brenda Okafor" : nil)) }
             if wd == 4 && !oddWeek { acts.append(("act.partner_coaching", 45, r.choice(["Dana Ruiz", "Ruth Alvarez"]))) }
             if wd == 4 && oddWeek { acts.append(("act.socializing", 45, nil)) }
             if wd == 0 { acts.append(("act.website_ad_set_up_paid", 30, r.choice(["Zillow", "LeadBoost"]))) }
@@ -322,7 +322,7 @@ public struct SampleYear {
         }
         let wednesdays = all.filter { $0.weekday == 2 && !isVacation($0) }
         for d in stride(from: 2, to: wednesdays.count, by: 8).map({ wednesdays[$0] }).prefix(5) {
-            event(d, "act.networking_open_group", 90, "Denton Chamber mixer", "company")
+            event(d, "act.networking.prospecting", 90, "Denton Chamber mixer", "company")
         }
     }
 
@@ -365,9 +365,10 @@ public struct SampleYear {
 
     mutating func expense(_ d: Day, _ vendor: String, _ amount: Double, _ group: ExpenseGroup, _ cat: String,
                           source src: String? = nil, purpose: String? = nil, withWhom: String? = nil, receipt: Bool = true,
-                          capture: Capture = .manual, reviewed: Bool = true) {
+                          capture: Capture = .manual, reviewed: Bool = true, recurring: Bool = false) {
         if d > yesterday && reviewed { return }
         var e = ExpenseRecord(date: d)
+        e.recurring = recurring ? true : nil
         e.vendor = vendor
         e.amount = (amount * 100).rounded() / 100
         e.group = group
@@ -389,12 +390,14 @@ public struct SampleYear {
         while m <= b {
             func on(_ day: Int) -> Day { Day(m.year, m.month, min(day, 28)) }
             expense(on(3), "LeadBoost", 95, .adInternet, "exp.ad_internet.website_ad", source: "LeadBoost",
-                    purpose: "Monthly lead subscription", capture: m.month >= 6 ? .bank : .manual)
-            expense(on(10), "Zillow Premier Agent", 250, .adInternet, "exp.ad_internet.website_ad", source: "Zillow", purpose: "Zillow lead program")
-            expense(on(5), "HostPilot", 24, .adInternet, "exp.ad_internet.web_hosting", purpose: "Website hosting")
-            expense(on(18), "Verizon", 92, .general, "exp.general.phone", purpose: "Mobile phone (business share)")
-            expense(on(1), "LoanPilot CRM", 59, .technology, "exp.technology.software", purpose: "CRM")
-            expense(on(7), "Prosperity Simplified", 149, .selfImprovement, "exp.self_improvement.coaching_fees", purpose: "Business coaching")
+                    purpose: "Monthly lead subscription", capture: m.month >= 6 ? .bank : .manual, recurring: true)
+            expense(on(10), "Zillow Premier Agent", 250, .adInternet, "exp.ad_internet.website_ad", source: "Zillow", purpose: "Zillow lead program",
+                    recurring: true)
+            expense(on(5), "HostPilot", 24, .adInternet, "exp.ad_internet.web_hosting", purpose: "Website hosting", recurring: true)
+            expense(on(18), "Verizon", 92, .general, "exp.general.phone", purpose: "Mobile phone (business share)", recurring: true)
+            expense(on(1), "Pipeline CRM", 59, .technology, "exp.technology.software", purpose: "CRM", recurring: true)
+            expense(on(7), "Prosperity Simplified", 149, .selfImprovement, "exp.self_improvement.coaching_fees", purpose: "Business coaching",
+                    recurring: true)
             for _ in 0..<3 {
                 let day = r.int(2, 27)
                 let realtor = r.choice(["Dana Ruiz", "Ruth Alvarez", "Kim Tran"] + (on(day) < now.adding(days: -42) ? ["Jared Cole"] : []))
@@ -456,7 +459,7 @@ public struct SampleYear {
                 withWhom: "Dana Ruiz", receipt: false, capture: .bank, reviewed: false)
         expense(y2, "Office Depot", 43.17, .general, "exp.general.office_supplies", purpose: "Printer paper, folders", capture: .receipt, reviewed: false)
         activity(y, "act.relationship_building_professional", 75, "Dana Ruiz", capture: .calendar, reviewed: false, notes: "Calendar: Lunch – Dana Ruiz")
-        activity(y2, "act.networking_open_group", 90, "Denton Chamber mixer", capture: .calendar, reviewed: false, notes: "Calendar: Chamber mixer")
+        activity(y2, "act.networking.prospecting", 90, "Denton Chamber mixer", capture: .calendar, reviewed: false, notes: "Calendar: Chamber mixer")
     }
 
     mutating func run() {

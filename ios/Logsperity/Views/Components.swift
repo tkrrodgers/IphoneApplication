@@ -60,16 +60,18 @@ struct SourceField: View {
     let label: String
     @Binding var name: String
     var prompt = "Who or what sent it"
+    /// Shown in red while empty (a field the numbers need).
+    var required = false
     @FocusState private var focused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            LabeledContent(label) {
+            LabeledContent {
                 TextField(prompt, text: $name)
                     .multilineTextAlignment(.trailing)
                     .keyboard(.name)
                     .focused($focused)
-            }
+            } label: { RequiredLabel(label, missing: required && name.isEmpty) }
             if focused {
                 let suggestions = model.sourceSuggestions(matching: name).filter { $0 != name }
                 if !suggestions.isEmpty {
@@ -88,18 +90,31 @@ struct SourceField: View {
     }
 }
 
-/// Pillar → Category and Pillar → Activity, filtered (FR-11, FR-12), plus Source.
+/// A field label that turns red while a required value is missing (the red fields on the original input screens).
+struct RequiredLabel: View {
+    let text: String
+    let missing: Bool
+    init(_ text: String, missing: Bool) { self.text = text; self.missing = missing }
+    var body: some View { Text(text).foregroundStyle(missing ? Color.red : Color.primary) }
+}
+
+/// Pillar → Category and Pillar → Activity, filtered (FR-11, FR-12), plus Source. Picking a source used before
+/// fills in its usual pillar, category and activity.
 struct AttributionSection: View {
+    @Environment(AppModel.self) private var model
     @Binding var attribution: Attribution
     @Binding var sourceName: String
     var showCategory = true
     var showActivity = true
     var showSource = true
     var sourceLabel = "Source"
+    /// Show the fields the numbers need in red until they're filled in.
+    var required = false
+    @State private var filledFrom: String?
 
     var body: some View {
-        Section("Where it came from") {
-            Picker("Pillar", selection: Binding(get: { attribution.pillar }, set: { p in
+        Section {
+            Picker(selection: Binding(get: { attribution.pillar }, set: { p in
                 attribution.pillar = p
                 if let c = attribution.categoryID, Taxonomy.categoryByID[c]?.pillar != p { attribution.categoryID = nil }
                 if let a = attribution.activityID, Taxonomy.activityByID[a]?.pillar != p { attribution.activityID = nil }
@@ -107,10 +122,10 @@ struct AttributionSection: View {
             })) {
                 Text("Choose").tag(Pillar?.none)
                 ForEach(Pillar.allCases) { Text($0.name).tag(Pillar?.some($0)) }
-            }
+            } label: { RequiredLabel("Pillar", missing: required && attribution.pillar == nil) }
             if let pillar = attribution.pillar {
                 if showCategory {
-                    Picker("Category", selection: Binding(get: { attribution.categoryID }, set: { c in
+                    Picker(selection: Binding(get: { attribution.categoryID }, set: { c in
                         attribution.categoryID = c
                         if let c, let item = Taxonomy.categoryByID[c] { attribution.subPillar = item.subPillar }
                     })) {
@@ -118,10 +133,10 @@ struct AttributionSection: View {
                         ForEach(groups(Taxonomy.categories(in: pillar)), id: \.0) { sub, items in
                             Section(sub.name) { ForEach(items) { Text($0.name).tag(String?.some($0.id)) } }
                         }
-                    }
+                    } label: { RequiredLabel("Category", missing: required && attribution.categoryID == nil) }
                 }
                 if showActivity {
-                    Picker("Activity", selection: Binding(get: { attribution.activityID }, set: { a in
+                    Picker(selection: Binding(get: { attribution.activityID }, set: { a in
                         attribution.activityID = a
                         if attribution.subPillar == nil, let a, let item = Taxonomy.activityByID[a] { attribution.subPillar = item.subPillar }
                     })) {
@@ -129,11 +144,38 @@ struct AttributionSection: View {
                         ForEach(groups(Taxonomy.activities(in: pillar)), id: \.0) { sub, items in
                             Section(sub.name) { ForEach(items) { Text($0.name).tag(String?.some($0.id)) } }
                         }
-                    }
+                    } label: { RequiredLabel(showCategory ? "Activity used" : "Activity", missing: required && attribution.activityID == nil) }
                 }
             }
-            if showSource { SourceField(label: sourceLabel, name: $sourceName) }
+            if showSource { SourceField(label: sourceLabel, name: $sourceName, required: required) }
+        } header: { Text("Where it came from") } footer: {
+            if let filledFrom {
+                Text("Filled in from your past entries with \(filledFrom). Change anything that's different.")
+            }
         }
+        .onChange(of: sourceName) { _, name in fillFromSource(name) }
+    }
+
+    /// A source used before: fill in the pillar, category and activity its entries usually have (only empty fields).
+    private func fillFromSource(_ name: String) {
+        guard let id = model.existingSourceID(named: name), let usual = model.book.usualAttribution(forSource: id) else { return }
+        var filled = false
+        if attribution.pillar == nil, let p = usual.pillar {
+            attribution.pillar = p
+            attribution.subPillar = usual.subPillar
+            filled = true
+        }
+        guard attribution.pillar == usual.pillar else { return }
+        if showCategory, attribution.categoryID == nil, let c = usual.categoryID {
+            attribution.categoryID = c
+            attribution.subPillar = usual.subPillar
+            filled = true
+        }
+        if showActivity, attribution.activityID == nil, let a = usual.activityID {
+            attribution.activityID = a
+            filled = true
+        }
+        if filled { filledFrom = model.sourceName(id) }
     }
 
     private func groups(_ items: [TaxonomyItem]) -> [(SubPillar, [TaxonomyItem])] {

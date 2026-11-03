@@ -38,7 +38,7 @@ struct LogHomeView: View {
         case .income: Format.moneyK(led.incomeTotal)
         case .expenses: Format.moneyK(led.expensesTotal)
         case .trips: Format.miles(led.businessMiles)
-        case .activities: Format.hours(led.bbHours)
+        case .activities: Format.quarterHours(led.bbHours)
         }
     }
 }
@@ -50,6 +50,8 @@ struct LogRow: Identifiable {
     let subtitle: String
     let value: String
     let needsReview: Bool
+    /// Strength of contact color (red, orange, yellow, blue, black).
+    var valueColor: Color?
 }
 
 struct LogListView: View {
@@ -78,7 +80,10 @@ struct LogListView: View {
                         }
                         Spacer()
                         VStack(alignment: .trailing, spacing: 2) {
-                            Text(r.value).monospacedDigit().foregroundStyle(.primary)
+                            HStack(spacing: 4) {
+                                if let c = r.valueColor { Image(systemName: "circle.fill").font(.caption2).foregroundStyle(c) }
+                                Text(r.value).monospacedDigit().foregroundStyle(r.valueColor ?? .primary)
+                            }
                             Text(Format.shortDate(r.date)).font(.caption).foregroundStyle(.secondary)
                         }
                     }
@@ -106,7 +111,7 @@ struct LogListView: View {
         case .prospects: b.prospects.map { p in
             LogRow(id: p.id, date: p.date, title: p.fullName.isEmpty ? "(no name)" : p.fullName,
                    subtitle: [cat(p.attribution), model.sourceName(p.attribution.sourceID)].filter { !$0.isEmpty }.joined(separator: " · "),
-                   value: p.strength?.name ?? "", needsReview: !p.reviewed)
+                   value: p.strength?.name ?? "", needsReview: !p.reviewed, valueColor: p.strength.map { Color(hex: $0.colorHex) })
         }
         case .closings: b.closings.map { c in
             LogRow(id: c.id, date: c.date, title: b.prospects.first { $0.id == c.prospectID }?.fullName ?? "Closing",
@@ -129,7 +134,7 @@ struct LogListView: View {
         case .activities: b.activities.map { a in
             LogRow(id: a.id, date: a.date, title: a.attribution.activityID.flatMap { Taxonomy.activityByID[$0]?.name } ?? "Activity",
                    subtitle: [a.attribution.pillar?.name, b.sourceName(a.attribution.sourceID)].compactMap { $0 }.joined(separator: " · "),
-                   value: Format.hours(Double(a.minutes) / 60), needsReview: !a.reviewed)
+                   value: Format.quarterHours(Double(a.minutes) / 60), needsReview: !a.reviewed)
         }
         }
         return out.sorted { $0.date > $1.date }
@@ -175,18 +180,20 @@ struct Prefill {
     }
 }
 
-/// Save · Save & Next · Cancel (design §10).
+/// Save · Save & Next · Cancel (design §10). When something is filled in but not everything the numbers need, Save
+/// becomes "Save as hint": the entry waits in the Review queue and HERB asks for the rest later.
 struct FormToolbar: ToolbarContent {
     @Environment(\.dismiss) private var dismiss
     let canSave: Bool
     var showNext = true
+    var isHint = false
     let save: () -> Bool
     let reset: () -> Void
 
     var body: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
         ToolbarItem(placement: .confirmationAction) {
-            Button("Save") { if save() { dismiss() } }.disabled(!canSave).bold()
+            Button(isHint ? "Save as hint" : "Save") { if save() { dismiss() } }.disabled(!canSave).bold()
         }
         if showNext {
             ToolbarItem(placement: .formBottom) {

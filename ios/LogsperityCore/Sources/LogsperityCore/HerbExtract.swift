@@ -276,7 +276,7 @@ enum HerbDialog {
     static let learnable = ["address": "addresses", "phone": "phone numbers", "email": "email addresses",
                             "vendor": "the store name", "withWhom": "who a meal was with", "payer": "who paid",
                             "destination": "trip destinations", "purpose": "the business purpose",
-                            "strength": "lead strength", "loan": "loan details"]
+                            "strength": "lead strength", "loan": "deal details"]
     static let intent: [String: HerbIntent] = ["prospects": .logProspect, "update": .updateProspect, "expenses": .logExpense,
                                                "activities": .logActivity, "income": .logIncome, "trips": .logTrip,
                                                "closings": .logClosing]
@@ -357,7 +357,7 @@ enum HerbDialog {
         (Rx("other|else|stranger|nobody|just met|don'?t know", true),
          HerbTags(.clients, "cat.prospective_client", "act.prospective_client_interaction")),
     ]
-    static let tagFromActivity = ["act.open_houses", "act.seminar", "act.networking_open_group", "act.door_knocking"]
+    static let tagFromActivity = ["act.open_houses", "act.seminar", "act.networking.prospecting", "act.door_knocking"]
 
     static func keywordTags(_ t: String) -> HerbTags? {
         HerbParse.inferFromKeywords(t) ?? extraCategory.first { $0.0.test(t) }?.1
@@ -394,9 +394,9 @@ enum HerbDialog {
 
     static let extraActivity: [(Rx, String)] = rxTable([
         ("meeting|met with|lunch|coffee|breakfast", "act.relationship_building_professional"),
-        (#"phone calls?|calling|calls\b"#, "act.cold_calling"), ("social media", "act.facebook_marketing"),
+        (#"phone calls?|calling|calls\b"#, "act.cold_calling"), ("social media", "act.social_media_content_creation.advertising"),
         (#"follow[- ]?ups?|prospect"#, "act.prospective_client_interaction"),
-        ("network", "act.networking_open_group"),
+        ("network", "act.networking.prospecting"),
     ] as [(String, String)], ci: true)
 
     static func activityFrom(_ t: String) -> String? {
@@ -405,7 +405,7 @@ enum HerbDialog {
 
     static let tripReasons: [(Rx, String)] = rxTable([
         ("closing", "Closing"), ("title", "Title Company"), ("open house", "Open Houses"),
-        ("door ?knock", "Door Knocking"), ("seminar", "Seminar"), ("network|chamber|mixer", "Networking-Open Group"),
+        ("door ?knock", "Door Knocking"), ("seminar", "Seminar"), ("network|chamber|mixer", "Networking"),
         ("realtor|agent|partner", "Relationship Building-Professional"),
         ("past client", "Past Client Interaction"), ("prospect|new client|lead", "Prospective Client Interaction"),
         ("client|meeting|appointment", "Current Client Interaction"), (#"\boffice\b"#, "Office"),
@@ -421,11 +421,11 @@ enum HerbDialog {
     static let missingLabel = [
         "name": "the name", "lastName": "the last name", "address": "the address", "phone": "the phone number",
         "email": "the email", "source": "the source", "relation": "who the source is", "followUp": "a follow-up date",
-        "strength": "lead strength", "loan": "the loan", "amount": "the amount", "category": "the category",
+        "strength": "lead strength", "loan": "the deal", "amount": "the amount", "category": "the category",
         "withWhom": "who it was with", "vendor": "the vendor", "purpose": "the business purpose",
         "activity": "the activity", "minutes": "the time", "type": "the income type", "payer": "the payer",
         "miles": "the miles", "destination": "the destination", "reason": "the business purpose",
-        "size": "the loan amount", "income": "what you earned", "client": "the client", "dup": "duplicate check",
+        "size": "the transaction size", "income": "what you earned", "client": "the client", "dup": "duplicate check",
     ]
 
     static let retryHint = [
@@ -435,7 +435,7 @@ enum HerbDialog {
         "amount": "I didn't catch an amount — say it like 45 dollars.",
         "minutes": "How long — for example 30 minutes or 2 hours?",
         "miles": "How many miles — for example 14?",
-        "size": "What was the loan amount — for example 520 thousand?",
+        "size": "What was the transaction size — for example 520 thousand?",
         "income": "How much did you earn — for example 6,500?",
     ]
 }

@@ -93,7 +93,7 @@ struct ReviewQueueView: View {
         .navigationTitle("Review queue")
         .sheet(item: $editing) { item in
             NavigationStack { LogForm(kind: LogKind(rawValue: item.log.rawValue)!, editingID: item.recordID) }
-                .onDisappear { model.confirmReview(item) }
+                .onDisappear { model.confirmReviewIfFinished(item) }
         }
     }
 }

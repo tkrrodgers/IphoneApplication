@@ -566,7 +566,7 @@ func ask(_ text: String) -> HerbReply {
         c.say("drove 12 miles")
         let r = c.say("to the title company")
         #expect(c.data["reason"] == "Title Company")
-        #expect(r.say.contains("worth $9.12"))
+        #expect(r.say.contains("worth $8.70"))  // 12 mi × $0.725
     }
 
     @Test func closingEstimatesIncome() throws {

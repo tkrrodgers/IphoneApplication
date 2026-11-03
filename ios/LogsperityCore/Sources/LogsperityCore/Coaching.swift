@@ -366,12 +366,25 @@ public struct Coach: Sendable {
         var items: [ReviewItem] = []
         let byDateDesc: (Day, Day) -> Bool = { $0 > $1 }
         for t in book.trips.filter({ !$0.reviewed }).sorted(by: { byDateDesc($0.date, $1.date) }) {
+            let title = "\(Format.num(t.miles, decimals: 1)) mi → \(t.destination.isEmpty ? "Trip" : t.destination)"
+            if let missing = Self.parkedMissing(t.notes) {  // a hint
+                items.append(ReviewItem(log: .trips, recordID: t.id, capture: t.capture, title: "Hint: \(title)",
+                                        subtitle: Format.relativeDay(t.date, now: now).capitalized, question: "Finish this trip — add \(missing)?"))
+                continue
+            }
             items.append(ReviewItem(log: .trips, recordID: t.id, capture: t.capture,
-                                    title: "\(Format.num(t.miles, decimals: 1)) mi → \(t.destination)",
+                                    title: title,
                                     subtitle: "\(Format.relativeDay(t.date, now: now).capitalized) · \(t.capture == .gps ? "detected by GPS" : "captured")",
                                     question: "Business trip to \(t.destination)?"))
         }
         for e in book.expenses.filter({ !$0.reviewed }).sorted(by: { byDateDesc($0.date, $1.date) }) {
+            if let missing = Self.parkedMissing(e.notes) {  // a hint
+                let what = [e.amount > 0 ? Format.money(e.amount, cents: true) : nil, e.vendor.isEmpty ? nil : e.vendor].compactMap { $0 }
+                items.append(ReviewItem(log: .expenses, recordID: e.id, capture: e.capture,
+                                        title: "Hint: \(what.isEmpty ? "Expense" : what.joined(separator: " · "))",
+                                        subtitle: Format.relativeDay(e.date, now: now).capitalized, question: "Finish this expense — add \(missing)?"))
+                continue
+            }
             let how = e.capture == .bank ? "Card transaction" : e.capture == .receipt ? "Receipt photo" : "Captured"
             var q = "\(e.group.name) · \(e.category?.name ?? "?")"
             if let w = e.withWhom, !w.isEmpty { q += " with \(w)" }
@@ -388,14 +401,16 @@ public struct Coach: Sendable {
                                     question: "Log this as \(name)\(with)?"))
         }
         for p in book.prospects.filter({ !$0.reviewed }).sorted(by: { byDateDesc($0.date, $1.date) }) {
+            let name = p.fullName.isEmpty ? "(no name yet)" : p.fullName
             let question: String
             if let missing = Self.parkedMissing(p.notes) {
-                question = missing == "the source" ? "Where did \(p.fullName) come from?" : "Finish \(p.fullName) — add \(missing)?"
+                question = missing == "the source" ? "Where did \(name) come from?" : "Finish \(name) — add \(missing)?"
             } else {
                 let cat = p.attribution.categoryID.flatMap { Taxonomy.categoryByID[$0]?.name } ?? ""
-                question = "Save \(p.fullName) from \(book.sourceName(p.attribution.sourceID) ?? Format.dash) as a \(cat) prospect?"
+                question = "Save \(name) from \(book.sourceName(p.attribution.sourceID) ?? Format.dash) as a \(cat) prospect?"
             }
-            items.append(ReviewItem(log: .prospects, recordID: p.id, capture: p.capture, title: "New prospect: \(p.fullName)",
+            items.append(ReviewItem(log: .prospects, recordID: p.id, capture: p.capture,
+                                    title: p.capture == .manual ? "Hint: \(name)" : "New prospect: \(name)",
                                     subtitle: p.notes ?? "Captured by voice", question: question))
         }
         for c in book.closings.filter({ !$0.reviewed }) {

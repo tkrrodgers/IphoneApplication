@@ -133,6 +133,8 @@ public struct ExpenseRecord: Hashable, Codable, Sendable, Identifiable {
     public var purpose: String?
     public var withWhom: String?
     public var hasReceipt = false
+    /// A monthly charge (subscription, dues). HERB asks at the start of each month whether it's still running.
+    public var recurring: Bool?
     public var notes: String?
     public var capture: Capture = .manual
     public var reviewed = true

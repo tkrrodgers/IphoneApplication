@@ -4,8 +4,10 @@ import Foundation
 // Appendix A and B). IDs are stable slugs so names can be corrected without breaking history. They match
 // the simulator's `taxonomy.py` exactly, so data and tests carry over.
 
+/// Ordered PARC (prospecting, advertising, relationships, clients): the way a business usually matures, and the order
+/// pickers and reports show them (pilot feedback, Nov 2026).
 public enum Pillar: String, CaseIterable, Codable, Sendable, Identifiable {
-    case clients, relationships, advertising, prospecting
+    case prospecting, advertising, relationships, clients
     public var id: String { rawValue }
     public var name: String {
         switch self {
@@ -18,7 +20,7 @@ public enum Pillar: String, CaseIterable, Codable, Sendable, Identifiable {
 }
 
 public enum SubPillar: String, CaseIterable, Codable, Sendable, Identifiable {
-    case clients, personal, professional, internet, traditional, prospecting
+    case prospecting, internet, traditional, professional, personal, clients
     public var id: String { rawValue }
     public var name: String {
         switch self {
@@ -101,11 +103,11 @@ public enum Strength: String, CaseIterable, Codable, Sendable, Identifiable {
     }
     public var colorHex: String {
         switch self {
-        case .redHot: "#C2412D"
-        case .hot: "#E8792B"
-        case .medium: "#C98A12"
-        case .cold: "#3B6FB6"
-        case .noGo: "#7A7A7A"
+        case .redHot: "#D32F2F"  // red
+        case .hot: "#EF7D1A"     // orange
+        case .medium: "#E2B714"  // yellow
+        case .cold: "#2F6DB5"    // blue
+        case .noGo: "#1C1C1E"    // black
         }
     }
     /// Probability a prospect closes, used for forecasts and focus.
@@ -203,28 +205,28 @@ public enum Taxonomy {
                        "Magazine", "Mailer/Farming", "Newsletter", "Newspaper", "Promotion", "Radio",
                        "Sign", "Sponsorship", "Swag", "TV"],
         .prospecting: ["Cold Calls", "Committee", "Door Knocking", "Expired Listings", "Floor Time",
-                       "Office Visits", "Open House", "Organization", "Network-Open Group", "Seminar",
+                       "Office Visits", "Open House", "Organization", "Networking", "Seminar",
                        "Trade Show"],
     ]
 
     private static let activityNames: KeyValuePairs<SubPillar, [String]> = [
         .clients: ["Past Client Interaction", "Current Client Interaction", "Marketing for Current Client",
                    "Prospective Client Interaction", "Client Appreciation Party", "Database Marketing",
-                   "Email Campaigning", "Facebook Marketing", "Mail Campaigning", "Newsletter Campaigning",
-                   "Personal Visit", "Twitter Marketing"],
+                   "Email Campaigning", "Mail Campaigning", "Newsletter Campaigning", "Personal Visit",
+                   "Social Media Content Creation", "Social Media Interaction", "Livestreaming"],
         .personal: ["Relationship Building-Personal", "Community Involvement-Personal", "Socializing"],
-        .professional: ["Relationship Building-Professional", "Networking-Closed Group", "Partner Coaching",
+        .professional: ["Relationship Building-Professional", "Networking", "Partner Coaching",
                         "Committee Involvement", "Organization Involvement",
                         "Community Involvement-Professional"],
         .internet: ["Website Set Up", "Blog Development", "Website Ad Set Up-Free", "Website Ad Set Up-Paid",
-                    "Video Production"],
+                    "Video Production", "Social Media Content Creation", "Social Media Interaction", "Livestreaming"],
         .traditional: ["Article Writing", "Billboard Ad Set Up", "Car Wrap Set Up", "Door Hanger Set Up",
-                       "Flyer Set Up", "Lead Generation", "Magazine Ad Set Up", "Mail Campaigning",
+                       "Flyer Set Up", "Magazine Ad Set Up", "Mail Campaigning",
                        "Newsletter Set Up", "Newspaper Ad Set Up", "Promotion Set Up", "Radio Ad Set Up",
                        "Sign Set Up", "Sponsorship Set Up", "Swag Set Up", "TV Ad Set Up"],
         .prospecting: ["Cold Calling", "Committee Involvement", "Door Knocking", "Expired Listings Calling",
                        "Floor Time", "Office Visits", "Open Houses", "Organization Involvement",
-                       "Networking-Open Group", "Seminar", "Trade Show"],
+                       "Networking", "Seminar", "Trade Show"],
     ]
 
     private static func build(prefix: String, _ table: KeyValuePairs<SubPillar, [String]>) -> [TaxonomyItem] {
@@ -244,7 +246,21 @@ public enum Taxonomy {
     public static let categories = build(prefix: "cat", categoryNames)
     public static let activities = build(prefix: "act", activityNames)
     public static let categoryByID = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
-    public static let activityByID = Dictionary(uniqueKeysWithValues: activities.map { ($0.id, $0) })
+    public static let activityByID = Dictionary(uniqueKeysWithValues: (activities + retiredActivities).map { ($0.id, $0) })
+
+    /// IDs renamed or retired since the pilot started, mapped to what replaced them. Saved logs are migrated on load
+    /// (`LogBook.migratingTaxonomy()`), so old entries keep their pillar and show the new names.
+    public static let renamedIDs: [String: String] = [
+        "cat.network_open_group": "cat.networking",
+        "act.networking_open_group": "act.networking.prospecting",
+        "act.networking_closed_group": "act.networking.relationships",
+        "act.facebook_marketing": "act.social_media_interaction.clients",
+        "act.twitter_marketing": "act.social_media_interaction.clients",
+    ]
+
+    /// Activities taken off the pickers. They still resolve, so old entries keep their name and pillar.
+    public static let retiredActivities = [TaxonomyItem(id: "act.lead_generation", name: "Lead Generation",
+                                                         pillar: .advertising, subPillar: .traditional)]
 
     public static func categories(in pillar: Pillar) -> [TaxonomyItem] { categories.filter { $0.pillar == pillar } }
     public static func activities(in pillar: Pillar) -> [TaxonomyItem] { activities.filter { $0.pillar == pillar } }
@@ -293,9 +309,10 @@ public enum Taxonomy {
         expenseCategories.filter { $0.group == group }
     }
 
-    public static let planOfAction = ["Call", "Email", "Mail Business Cards", "Mail Letter", "Mail Information",
-                                      "Mail Promotion", "Mail Newsletter", "Add to Database", "Add to Email Campaign",
-                                      "Add to Phone Campaign", "Add to Mail Campaign", "Visit", "Refer to Other",
+    /// Follow-up plans. The email, phone and mail campaign plans were dropped once data can be exported to a CRM.
+    public static let planOfAction = ["Call", "Text", "Email", "Video Message", "Social Media Message",
+                                      "Mail Business Cards", "Mail Letter", "Mail Information", "Mail Promotion",
+                                      "Mail Newsletter", "Add to Database", "Visit", "Refer to Other",
                                       "Refer to Notes", "Nothing Now"]
     public static let followUpDays = [5, 7, 10, 15, 21, 30, 45, 60, 75, 90, 120, 180, 250, 365]
     public static let professions = ["Accountant", "Appraiser", "Architect", "Attorney", "Banker", "Business Coach",
@@ -307,7 +324,7 @@ public enum Taxonomy {
                                         "Prospective Client Interaction", "Personal Visit",
                                         "Relationship Building-Personal", "Relationship Building-Professional",
                                         "Community Involvement-Personal", "Community Involvement-Professional",
-                                        "Socializing", "Networking-Closed Group", "Networking-Open Group",
+                                        "Socializing", "Networking",
                                         "Partner Coaching", "Committee Involvement", "Organization Involvement",
                                         "Door Knocking", "Office Visits", "Open Houses", "Seminar", "Trade Show",
                                         "Closing", "Title Company", "Office"]
@@ -315,8 +332,7 @@ public enum Taxonomy {
     /// IRS standard mileage rates by date (dollars per mile).
     public static let mileageRates: [(from: Day, to: Day, rate: Double)] = [
         (Day(2025, 1, 1), Day(2025, 12, 31), 0.70),
-        (Day(2026, 1, 1), Day(2026, 6, 30), 0.725),
-        (Day(2026, 7, 1), Day(2026, 12, 31), 0.76),
+        (Day(2026, 1, 1), Day(2026, 12, 31), 0.725),
     ]
 
     public static func mileageRate(on d: Day) -> Double {

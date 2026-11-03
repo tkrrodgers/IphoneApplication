@@ -4,7 +4,7 @@ import Foundation
 // of these. The app draws each kind once; the engine decides what goes in them.
 
 public enum ValueFormat: String, Sendable {
-    case money, money0, pct, num, num1, hours, miles, text
+    case money, money0, pct, num, num1, hours, quarterHours, miles, text
 
     public func format(_ v: Double?) -> String {
         switch self {
@@ -13,6 +13,7 @@ public enum ValueFormat: String, Sendable {
         case .num: Format.num(v)
         case .num1: Format.num(v, decimals: 1)
         case .hours: Format.hours(v)
+        case .quarterHours: Format.quarterHours(v)
         case .miles: Format.miles(v)
         case .text: v.map { String($0) } ?? Format.dash
         }

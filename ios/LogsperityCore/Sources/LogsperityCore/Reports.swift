@@ -205,7 +205,7 @@ public struct Reports: Sendable {
             total = ["date": .text("\(rows.count) entries"), "miles": .number(led.businessMiles), "deduction": .number(led.mileageDeduction)]
         default:
             cols = [Column("date", "Date"), Column("pillar", "Pillar"), Column("activity", "Activity"), Column("with", "With"),
-                    Column("minutes", "Minutes", right: true, .num), Column("hours", "Hours", right: true, .num1)]
+                    Column("minutes", "Minutes", right: true, .num), Column("hours", "Hours", right: true, .quarterHours)]
             rows = led.activities.reversed().map { a in
                 ["date": date(a.date), "pillar": pillarName(a.attribution), "activity": act(a.attribution),
                  "with": src(a.attribution.sourceID), "minutes": .number(Double(a.minutes)), "hours": .number(Double(a.minutes) / 60)]
